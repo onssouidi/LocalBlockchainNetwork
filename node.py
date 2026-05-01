@@ -41,13 +41,35 @@ def status():
 
 
 @app.route("/addtx")
+@app.route("/addtx")
 def add_tx():
     sender   = request.args.get("sender")
     receiver = request.args.get("to")
     amount   = request.args.get("amount", type=float)
-    success  = pool.add_transaction(sender, receiver, amount)
-    return jsonify({"success": success, "pool_size": pool.size()})
 
+    if not sender or not receiver:
+        return jsonify({
+            "success": False,
+            "error": "sender and receiver are required"
+        }), 400
+
+    if amount is None or amount <= 0:
+        return jsonify({
+            "success": False,
+            "error": "amount is required and must be positive"
+        }), 400
+
+    if sender != "GENESIS":
+        balance = blockchain.get_balance(sender)
+        if balance < amount:
+            return jsonify({
+                "success": False,
+                "error": "insufficient balance",
+                "balance": balance
+            }), 400
+
+    success = pool.add_transaction(sender, receiver, amount)
+    return jsonify({"success": success, "pool_size": pool.size()})
 
 @app.route("/getmempool")
 def get_mempool():

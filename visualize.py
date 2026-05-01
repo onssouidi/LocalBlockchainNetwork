@@ -4,6 +4,7 @@ import math
 import sys
 import time
 
+from node import status
 import pygame
 import requests
 
@@ -47,7 +48,13 @@ def fetch_blockchain(api_url):
         return payload.get("chain", [])
     except requests.RequestException:
         return None
-
+def fetch_status(api_url):
+    try:
+        response = requests.get(f"{api_url}/", timeout=4)
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException:
+        return {}
 
 def draw_text(surface, text, font, color, x, y):
     for line in text.split("\n"):
@@ -144,10 +151,11 @@ def render(screen, font_small, font_large, chain, api_url, node_id):
 def main():
     parser = argparse.ArgumentParser(description="Visualisation Pygame de la blockchain par mineur")
     parser.add_argument("--api", "-a", type=str, default="http://localhost:5000", help="URL du noeud à interroger")
-    parser.add_argument("--node-id", type=str, default="Node-5000", help="Identifiant du noeud utilisé pour le calcul du taux de minage")
+    parser.add_argument("--node-id", type=str, default=None, help="Identifiant du noeud utilisé pour le calcul du taux de minage")
     args = parser.parse_args()
     api_url = args.api.rstrip("/")
-    node_id = args.node_id
+    status = fetch_status(api_url)
+    node_id = args.node_id or status.get("node_id") or "UNKNOWN"
 
     pygame.init()
     screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
